@@ -14,20 +14,45 @@ New User:
 
 (Update)
 - update either username or password *change
+- Password reset
 """
 import re
-
-print("Welcome to our app!")
-print()
+import json
 
 def to_json(username, password):
-    pass
+    """Save data to a json file"""
+    credentials = {
+                'username': username,
+                'password': password
+    }
+    json_string = json.dumps(credentials)
+
+    filename = 'pass.json'
+    with open(filename, 'r+') as jsonFile:
+        # First we load existing data into a dictionary
+        file_data = json.load(jsonFile)
+        # Join new_data with file_data inside users
+        file_data["users"].append(credentials)
+        # sets jsonFile current position at offset
+        jsonFile.seek(0)
+        # convert back to json.
+        json.dump(file_data, jsonFile, indent = 4)
+    jsonFile.close()
+
+def from_json(filename='pass.json'):
+    """Load data from json file
+    Return - a dictionary containing data
+    """
+    with open(filename, 'r') as jsonFile:
+        file_data = json.load(jsonFile)
+        return file_data
+
 
 def update(reg_username, reg_password):
     pass
 
 
-def sign_in(reg_username=None, reg_password=None):
+def sign_in():
     """sign in the user into the system"""
 
     while True:
@@ -38,7 +63,27 @@ def sign_in(reg_username=None, reg_password=None):
         login_username = str(input("Enter username: "))
         login_password = input("Enter password: ")
 
-        if login_username == reg_username and login_password == reg_password:
+        def checker(file_data=from_json()):
+            """check if user exists
+            Return - True if the user exists otherwise False
+            """
+            file_data = from_json()
+            users = file_data['users']
+
+            # create user that will be used for lookup
+            user_data = {
+                'username': login_username,
+                'password': login_password
+            }
+
+            for user in users:
+                # check if the user combination exists in json
+                if all(item in user.items() for item in user_data.items()):
+                    return True
+                return False
+
+
+        if checker():
             print()
             print(f"You have successfully logged in as {login_username}")
             break
@@ -64,8 +109,11 @@ def registration():
                 reg_password2 = input("Confirm password: ")
 
                 if reg_password1 == reg_password2:
+                    # save credentials to data storage(json)
+                    to_json(reg_username, reg_password1)
+
                     print("You have successfully signed up!")
-                    sign_in(reg_username=reg_username, reg_password=reg_password1)
+                    sign_in()
                     break
                 else:
                     print()
@@ -76,6 +124,22 @@ def registration():
             print("Password Must contain at least 8 characters, Uppercase, lowercase, numbers and special characters")
             continue
 
+# Core of the app
+print("Welcome to our app!")
+print()
 
+while True:
+    answer = str(input("Do you already have an account? (Yes/No) \n (stop to exit): "))
 
-registration()
+    if answer.lower() == "yes" or answer.lower() == "y":
+        sign_in()
+        break
+    elif answer.lower() == "no" or answer.lower() == "n":
+        registration()
+        break
+    elif answer.lower() == "stop" or answer.lower() == "s":
+        print("Thank you for passing by!")
+        break
+    else:
+        print("Please Enter a choice from the given")
+        continue
